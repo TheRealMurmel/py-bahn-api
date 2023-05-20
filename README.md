@@ -4,6 +4,7 @@ This project is a Proof of Concept for querying the DB (Deutsche Bahn) API.
 ## Features
 
 * Search Stations
+* Search Connections
 
 ## Requirements
 
