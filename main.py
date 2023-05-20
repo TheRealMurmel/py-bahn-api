@@ -3,6 +3,10 @@ import json
 
 
 def searchStationByName(searchTerm, enableProxy=False):
+
+    if searchTerm != 'Frank':
+        raise Exception("Checksum is only valid for searchterm: 'Frank'")
+
     if enableProxy:
         proxies = {'https': '0.0.0.0:8080'}
         verify = False
