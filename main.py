@@ -1,3 +1,7 @@
+"""
+This module provides examples on how to query the DB (Deutsche Bahn) api
+"""
+
 import requests
 import json
 
@@ -128,6 +132,8 @@ def searchStationByName(searchTerm, enableProxy=False):
 
 
 def sampleStationSearch():
+    """Search for all train stations matching starting with 'Frank' """
+
     # - fix search term, until checksum is calculated dynamically
     searchTerm = 'Frank'
 
@@ -141,11 +147,15 @@ def sampleStationSearch():
 
 
 def sampleConnectionSearch():
+    """Search for all connections from Frankfurt to Cologne on 20.05.2023"""
     connections = searchConnection()
     print(connections)
 
 
 def main():
+    """
+    Showcase for station and connection search
+    """
     sampleStationSearch()
     sampleConnectionSearch()
 
