@@ -3,8 +3,10 @@ This project is a Proof of Concept for querying the DB (Deutsche Bahn) API.
 
 ## Features
 
-* Search Stations
-* Search Connections
+* Search stations
+* Search connections
+* Search tickets for connection
+* Search for best prices
 
 ## Requirements
 
