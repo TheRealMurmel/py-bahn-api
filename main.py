@@ -2,14 +2,19 @@
 This module provides examples on how to query the DB (Deutsche Bahn) api
 """
 
-import requests
-import json
-import urllib3
+import datetime
 from hashlib import md5
+import json
+import requests
+import urllib3
 
 # - Hide warnings for insecure connections (proxy ;) )
 #   TODO: Never use this in production
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+STATION_ID_COLOGNE = 8000207
+STATION_ID_FRANKFURT = 8000105
+
 
 def checksum(data):
     SALT = 'bdI8UVj40K5fvxwf'
@@ -18,7 +23,7 @@ def checksum(data):
     return md5(saltedDataEncoded).hexdigest()
 
 
-def searchConnection(enableProxy=False):
+def searchConnection(journeyDate=20230821, enableProxy=False):
     """ Search for connections between Cologne and Frankfurt """
 
     if enableProxy:
@@ -41,7 +46,7 @@ def searchConnection(enableProxy=False):
                         "cfg": {"polyEnc": "GPA", "rtMode": "HYBRID"},
                         "meth": "TripSearch",
                         "req": {
-                            "outDate": "20230520",
+                            "outDate": f"{journeyDate}",
                             "outTime": "124900",
                             "arrLocL": [{
                                     "crd": {"x": 6959197, "y": 50942823}, "extId": "8000207",
@@ -101,7 +106,6 @@ def searchStationByName(searchTerm='Frank', enableProxy=False):
         "Content-Type": "application/json;charset=UTF-8"
     }
 
-    # - TODO: static auth token
     searchRequest = {"auth": {"aid": "n91dB8Z77MLdoR0K", "type": "AID"},
                      "client": {"id": "DB", "name": "DB Navigator", "os": "Android 9", "res": "1080x2028",
                                 "type": "AND",
@@ -166,7 +170,7 @@ def reconstruction(enableProxy=False):
                 "getPasslist": True,
                 "getPolyline": True,
                 "outReconL": [{
-                    "ctx": "T$A=1@O=Frankfurt(Main)Hbf@L=8000105@a=128@$A=1@O=Köln Hbf@L=8000207@a=128@$202305251828$202305251931$ICE   10$$1$$$$$$"
+                    "ctx": "T$A=1@O=Frankfurt(Main)Hbf@L=8000105@a=128@$A=1@O=Köln Hbf@L=8000207@a=128@$202308211326$202308211432$ICE  154$$1$$$$$$"
                 }],
                 "trfReq": {
                     "cType": "PK",
@@ -196,7 +200,7 @@ def reconstruction(enableProxy=False):
     return response.json()
 
 
-def bestPriceSearch(enableProxy=False):
+def bestPriceSearch(journeyDate, journeyTime=120000, departureStation=STATION_ID_FRANKFURT, arrivalStation=STATION_ID_COLOGNE, enableProxy=False):
 
     if enableProxy:
         proxies = {'https': '0.0.0.0:8080'}
@@ -222,14 +226,16 @@ def bestPriceSearch(enableProxy=False):
             "cfg": {"polyEnc": "GPA", "rtMode": "HYBRID"},
             "meth": "BestPriceSearch",
             "req": {
-                "outDate": "20230525",
-                "outTime": "183000",
+                "outDate": f"{journeyDate}",
+                "outTime": f"{journeyTime}",
+                "depLocL": [{
+                    "extId": f"{departureStation}",
+                    "type": "S"
+                }],
                 "arrLocL": [
                     {
-                        "crd": {"x": 6959197, "y": 50942823},
-                        "extId": "8000207",
-                        "lid": "A=1@O=Köln Hbf@X=6958730@Y=50943029@U=80@L=8000207@B=1@p=1678909069@",
-                        "name": "Köln Hbf", "type": "S"
+                        "extId": f"{arrivalStation}",
+                        "type": "S"
                     }],
                 "getPasslist": True,
                 "getPolyline": True,
@@ -284,7 +290,7 @@ def sampleConnectionSearch():
 
     # - request & response parsing
     connectionsResponse = searchConnection()
-    connections = [(connection['cid'], connection['dur']) for connection in connectionsResponse['svcResL'][0]['res']['outConL']]
+    connections = [(connection['cid'], connection['ctxRecon']) for connection in connectionsResponse['svcResL'][0]['res']['outConL']]
 
     print(*connections, sep='\n')
     print("")
@@ -306,12 +312,14 @@ def sampleResonstruction():
 
 
 def sampleBestPriceSearch():
-    """Sample request for best prices between Frankfurt -> Cologne on 25.05.2023 """
+    """Sample request for best prices between Frankfurt -> Cologne"""
 
     print("sampleBestPriceSearch")
+    tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y%m%d")
+    noon = 120000
 
     # - request & response parsing
-    bestPriceResponse = bestPriceSearch()
+    bestPriceResponse = bestPriceSearch(journeyDate=tomorrow, journeyTime=noon, departureStation=STATION_ID_FRANKFURT, arrivalStation=STATION_ID_COLOGNE)
     bestPrices = [(bestPrice['toTime'], bestPrice['bestPrice']['amount']) for bestPrice in bestPriceResponse['svcResL'][0]['res']['outDaySegL']]
 
     print(*bestPrices, sep='\n')
