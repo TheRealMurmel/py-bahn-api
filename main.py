@@ -5,10 +5,17 @@ This module provides examples on how to query the DB (Deutsche Bahn) api
 import requests
 import json
 import urllib3
+from hashlib import md5
 
 # - Hide warnings for insecure connections (proxy ;) )
 #   TODO: Never use this in production
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def checksum(data):
+    SALT = 'bdI8UVj40K5fvxwf'
+    saltedData = data+SALT
+    saltedDataEncoded = saltedData.encode('utf-8')
+    return md5(saltedDataEncoded).hexdigest()
 
 
 def searchConnection(enableProxy=False):
@@ -22,11 +29,6 @@ def searchConnection(enableProxy=False):
         verify = True
 
     url = "https://reiseauskunft.bahn.de/bin/mgate.exe"
-
-    # - TODO: checksum calculation
-    params = {
-        'checksum': '42c706f5140e64354b22fc8f90dede07',
-    }
 
     headers = {"User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; Pixel 3 Build/PI)",
                      "Content-Type": "application/json;charset=UTF-8"}
@@ -73,14 +75,16 @@ def searchConnection(enableProxy=False):
     searchRequestStr = json.dumps(searchRequest, ensure_ascii=False, separators=(',', ':'))
     searchRequestEncoded = searchRequestStr.encode('utf-8')
 
+    reqChecksum = checksum(searchRequestStr)
+    params = {
+        'checksum': f'{reqChecksum}',
+    }
+
     response = requests.post(url, params=params, headers=headers, data=searchRequestEncoded, proxies=proxies, verify=verify)
     return response.json()
 
 
-def searchStationByName(enableProxy=False):
-
-    # - fix search term, until checksum is calculated dynamically
-    searchTerm = 'Frank'
+def searchStationByName(searchTerm='Frank', enableProxy=False):
 
     if enableProxy:
         proxies = {'https': '0.0.0.0:8080'}
@@ -89,12 +93,8 @@ def searchStationByName(enableProxy=False):
         proxies = {}
         verify = True
 
-    # - TODO: checksum calculation
-    params = {
-        'checksum': '5b2615acc349d757bc7c1d94da5e9ad3',
-    }
-
     url = "https://reiseauskunft.bahn.de/bin/mgate.exe"
+
     headers = {
         "Host": "reiseauskunft.bahn.de",
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; unknown Build/PI)",
@@ -126,6 +126,12 @@ def searchStationByName(enableProxy=False):
     searchRequestStr = json.dumps(searchRequest, ensure_ascii=False, separators=(',', ':'))
     searchRequestEncoded = searchRequestStr.encode('utf-8')
 
+    reqChecksum = checksum(searchRequestStr)
+
+    params = {
+        'checksum': f'{reqChecksum}',
+    }
+
     response = requests.post(url, params=params, headers=headers, data=searchRequestEncoded, proxies=proxies, verify=verify)
 
     return response.json()
@@ -141,10 +147,6 @@ def reconstruction(enableProxy=False):
         verify = True
 
     url = "https://reiseauskunft.bahn.de/bin/mgate.exe"
-
-    params = {
-        'checksum': 'bac6e939533c25bb9d19781735fb165d',
-    }
 
     headers = {
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; unknown Build/PI)",
@@ -184,6 +186,12 @@ def reconstruction(enableProxy=False):
     reconstructionRequestStr = json.dumps(reconstructionRequest, ensure_ascii=False, separators=(',', ':'))
     reconstructionRequestEncoded = reconstructionRequestStr.encode('utf-8')
 
+    requestChecksum = checksum(reconstructionRequestStr)
+
+    params = {
+        'checksum': f'{requestChecksum}',
+    }
+
     response = requests.post(url, params=params, headers=headers, data=reconstructionRequestEncoded, proxies=proxies, verify=verify)
     return response.json()
 
@@ -198,10 +206,6 @@ def bestPriceSearch(enableProxy=False):
         verify = True
 
     url = "https://reiseauskunft.bahn.de/bin/mgate.exe"
-
-    params = {
-        'checksum': 'b7fbc668cec93b4a6d3a24a12d9339cc',
-    }
 
     headers = {
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 9; Pixel 3 Build/PI)",
@@ -227,13 +231,6 @@ def bestPriceSearch(enableProxy=False):
                         "lid": "A=1@O=Köln Hbf@X=6958730@Y=50943029@U=80@L=8000207@B=1@p=1678909069@",
                         "name": "Köln Hbf", "type": "S"
                     }],
-                "depLocL": [{
-                    "crd": {"x": 8663003, "y": 50106817},
-                    "extId": "8000105",
-                    "lid": "A=1@O=Frankfurt(Main)Hbf@X=8663785@Y=50107149@U=80@L=8000105@B=1@p=1678909069@",
-                    "name": "Frankfurt(Main)Hbf",
-                    "type": "S"
-                }],
                 "getPasslist": True,
                 "getPolyline": True,
                 "jnyFltrL": [{
@@ -256,6 +253,12 @@ def bestPriceSearch(enableProxy=False):
     #   in order to set `ensure_ascii`
     bestPriceSearchRequestStr = json.dumps(bestPriceSearchRequest, ensure_ascii=False, separators=(',', ':'))
     bestPriceSearchRequestEncoded = bestPriceSearchRequestStr.encode('utf-8')
+
+    reqChecksum = checksum(bestPriceSearchRequestStr)
+
+    params = {
+        'checksum': reqChecksum,
+    }
 
     response = requests.post(url, params=params, headers=headers, data=bestPriceSearchRequestEncoded, proxies=proxies, verify=verify)
     return response.json()
